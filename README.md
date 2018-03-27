@@ -148,4 +148,4 @@ Polo is the Tupi-Guarani god of the winds, messenger of Tupã.
 
 # Other implementations
 
-Polo is also available to NodeJS ([http://github.com/dev-hunterco/polo-nodejs])
+Polo is also available to NodeJS - http://github.com/dev-hunterco/polo-nodejs
