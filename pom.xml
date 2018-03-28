@@ -94,10 +94,13 @@
 							<goal>sign</goal>
 						</goals>
 						<configuration>
+						<!-- 
+							When running on MacOS the following parameters should be used (join dashes)
  							<gpgArguments>
-                    				<arg>--pinentry-mode</arg>
+                    				<arg> - - pinentry-mode</arg>
                     				<arg>loopback</arg>
                 				</gpgArguments>
+						 -->
             				</configuration>
            			</execution>
 				</executions>
