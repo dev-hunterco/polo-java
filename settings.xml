@@ -1,0 +1,21 @@
+<settings>
+  <servers>
+    <server>
+      <id>ossrh</id>
+      <username>${env.CI_DEPLOY_USERNAME}</username>
+      <password>${env.CI_DEPLOY_PASSWORD}</password>
+    </server>
+  </servers>
+  <profiles>
+    <profile>
+      <id>ossrh</id>
+      <activation>
+        <activeByDefault>true</activeByDefault>
+      </activation>
+      <properties>
+       	<gpg.keyname>A00AED8EE608EB39</gpg.keyname>
+        <gpg.passphrase>${env.CI_GPG_KEYPASS}</gpg.passphrase>
+      </properties>
+    </profile>
+  </profiles>
+</settings>
