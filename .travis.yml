@@ -19,5 +19,6 @@ before_install:
 - docker ps -a
 - sleep 5
 - gpg --import encrypt.keys
+- gpg --list-keys
 script:
 - mvn deploy --settings target/travis/settings.xml
