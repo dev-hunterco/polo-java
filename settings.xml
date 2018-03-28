@@ -13,7 +13,7 @@
         <activeByDefault>true</activeByDefault>
       </activation>
       <properties>
-       	<gpg.keyname>A00AED8EE608EB39</gpg.keyname>
+       	<gpg.keyname>${env.CI_GPG_KEYNAME}</gpg.keyname>
         <gpg.passphrase>${env.CI_GPG_KEYPASS}</gpg.passphrase>
       </properties>
     </profile>
