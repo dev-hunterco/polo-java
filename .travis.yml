@@ -18,6 +18,6 @@ before_install:
   localstack/localstack
 - docker ps -a
 - sleep 5
-- gpg --keyserver hkp://pgp.mit.edu --receive-keys ${CI_GPG_KEYNAME}
+- gpg --import encrypt.keys
 script:
 - mvn deploy --settings target/travis/settings.xml
