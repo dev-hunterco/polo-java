@@ -18,7 +18,7 @@ env:
   - CI_GPG_KEYNAME: HunterCo_OSS
   
 before_install:
-- bash script/prepare-build.sh
+- bash scripts/prepare-build.sh
 
 install: 
 - mvn install -P !release -DskipTests=true -Dmaven.javadoc.skip=true -B -V
