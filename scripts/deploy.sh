@@ -2,13 +2,13 @@
 
 if [ "$1" = 'production' ] && [ "$TARGET_VERSION" = "$TRAVIS_TAG"]; then
     echo ----------------------------------------------------------
-    echo ------------------ DEPLOYING PRODUCTION ------------------
+    echo -------- DEPLOYING PRODUCTION - $TARGET_VERSION-----------
     echo ----------------------------------------------------------
 else
     echo ----------------------------------------------------------
-    echo ------------------ DEPLOYING SNAPSHOP --------------------
+    echo ----------- DEPLOYING SNAPSHOP - $POM_VERSION ------------
     echo ----------------------------------------------------------
 fi
 
-echo Building version...
-mvn deploy -P release --settings settings.xml
+echo Deploying version...
+mvn deploy -Dmaven.test.skip=true -P release --settings settings.xml
