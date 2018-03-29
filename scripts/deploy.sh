@@ -11,4 +11,4 @@ else
 fi
 
 echo Building version...
-# mvn deploy -P release --settings settings.xml
+mvn deploy -P release --settings settings.xml
