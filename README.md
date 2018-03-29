@@ -142,6 +142,18 @@ poloAPI.onResponse("greetings", new ResponseHandlerInterface() {
 
 When a message is forwarded it keeps track of the original sender using the SentBy field, although a new "forwardedBy" property is added to the message to enable tracking.
 
+# MVN Dependencies
+
+To be able to use Polo in your project you should just add the dependency, as the following:
+
+```
+<dependency>
+	<groupId>br.com.hunterco</groupId>
+	<artifactId>polo</artifactId>
+	<version>${polo.version}</version>
+</dependency>
+```
+
 # Who is Polo
 
 Polo is the Tupi-Guarani god of the winds, messenger of Tupã.
