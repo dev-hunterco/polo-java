@@ -29,7 +29,7 @@ before_install:
 install: 
 - mvn install -P !release -DskipTests=true -Dmaven.javadoc.skip=true -B -V
 script: 
-- mvn test -P !build-extras -B
+- mvn test -P !release -B
 
 deploy:
   # deploy SNAPSHOPT
@@ -42,4 +42,3 @@ deploy:
     script: bash scripts/deploy.sh production
     on:
       tags: true
-      branch: master
