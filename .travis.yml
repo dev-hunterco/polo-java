@@ -1,3 +1,4 @@
+### Based on the information available in http://www.debonair.io/post/maven-cd/
 sudo: required
 language: java
 services:
@@ -17,14 +18,20 @@ env:
   - CI_GPG_KEYNAME: HunterCo_OSS
   
 before_install:
+- echo Preparing Docker....
 - docker pull localstack/localstack
 - docker run -d -e SERVICES='sqs,sns' -p 127.0.0.1:4575:4575 -p 127.0.0.1:4576:4576
   localstack/localstack
 - docker ps -a
 - sleep 5
-- openssl aes-256-cbc -K $encrypted_e29ac0d0251a_key -iv $encrypted_e29ac0d0251a_iv
-  -in codesigning.asc.enc -out codesigning.asc -d
+- echo Installing Certificate...
+- openssl aes-256-cbc -K $encrypted_e29ac0d0251a_key -iv $encrypted_e29ac0d0251a_iv -in codesigning.asc.enc -out codesigning.asc -d
 - gpg --fast-import codesigning.asc
+- echo Inspecting version
+- export TARGET_VERSION=`mvn org.apache.maven.plugins:maven-help-plugin:2.1.1:evaluate -Dexpression=project.version |grep -Ev '(^\[|Download\w+:)'` 
+- export TARGET_VERSION=${TARGET_VERSION/-SNAPSHOT/}
+- echo Maven Base Version: $TARGET_VERSION
+- echo Current Tag: $TRAVIS_TAG
 
 install: 
 - mvn install -P !release -DskipTests=true -Dmaven.javadoc.skip=true -B -V
@@ -32,13 +39,13 @@ script:
 - mvn test -P !release -B
 
 deploy:
-  # deploy SNAPSHOPT
-  - provider: script
+  - provider: script   # deploy SNAPSHOPT
+    skip_cleanup: true
     script: bash scripts/deploy.sh snapshop
     on:
       branch: master
-  # Final version
-  - provider: script
+  - provider: script   # Final version
+    skip_cleanup: true
     script: bash scripts/deploy.sh production
     on:
       tags: true
