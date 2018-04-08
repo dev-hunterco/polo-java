@@ -11,8 +11,7 @@ echo Mode: $1
 echo Travis Tag: "$TRAVIS_TAG"
 echo Target Version: $TARGET_VERSION
 
-
-if [ "$1" = "production" ] && [ "$TARGET_VERSION" = "$TRAVIS_TAG"]; then
+if [ "$1" = "production" ] && [ "$TARGET_VERSION" = "$TRAVIS_TAG" ]; then
     echo ----------------------------------------------------------
     echo -------- DEPLOYING PRODUCTION - $TARGET_VERSION ----------
     echo ----------------------------------------------------------
