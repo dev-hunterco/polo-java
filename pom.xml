@@ -26,6 +26,7 @@
 	</distributionManagement>
 	<scm>
 		<url>https://github.com/dev-hunterco/polo-java</url>
+		<developerConnection>HunterCo</developerConnection>
 	</scm>
 
 	<properties>
@@ -134,4 +135,5 @@
 			</build>
 	    </profile>
 	</profiles>
+	<description>Polo is a lightweight framework designed to enable exchange of asynchronous messages between applications (usually in a microservice environment).</description>
 </project>
