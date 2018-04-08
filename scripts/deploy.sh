@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-if [ "$1" = 'production' ] && [ "$TARGET_VERSION" = "$TRAVIS_TAG"]; then
+if [ "$1" = "production" ] && [ "$TARGET_VERSION" = "$TRAVIS_TAG"]; then
     echo ----------------------------------------------------------
     echo -------- DEPLOYING PRODUCTION - $TARGET_VERSION ----------
     echo ----------------------------------------------------------
