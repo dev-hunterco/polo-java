@@ -17,6 +17,21 @@
 			<distribution>repo</distribution>
 		</license>
 	</licenses>
+	
+	<developers>
+		<developer>
+			<id>fcordova</id>
+			<name>Karsten Thoms</name>
+			<email>Flavio Eduardo de Córdova</email>
+			<organization>hunterco</organization>
+			<organizationUrl>http://www.hunterco.com.br</organizationUrl>
+			<roles>
+				<role>Project-Administrator</role>
+				<role>Developer</role>
+			</roles>
+			<timezone>-3</timezone>
+		</developer>
+	</developers>
 
 	<distributionManagement>
 		<snapshotRepository>
@@ -28,7 +43,7 @@
 		<url>https://github.com/dev-hunterco/polo-java</url>
 		<developerConnection>HunterCo</developerConnection>
 	</scm>
-
+	
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<maven.compiler.source>1.8</maven.compiler.source>
