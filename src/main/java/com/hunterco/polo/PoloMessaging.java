@@ -209,11 +209,33 @@ public class PoloMessaging {
 	public String sendRequest(String destination, String service, Object message, Object payload) throws PoloMessagingException {
 		return this.sendRequest(destination, service, message, null, null);
 	}
+	public String sendRequest(String destination, String service, Object message, Object payload, String conversationId) throws PoloMessagingException {
+        // Verifica se o aplicativo é capaz de receber respostas do serviço.
+        if(this.responseHandlers.get(service) == null) {
+            throw new PoloMessagingException("Can't send message to service " + service + " without a response handler registered.");
+        }
+
+        if(conversationId == null)
+            conversationId = UUID.randomUUID().toString();
+
+        // Get the queue URL
+        String destQueue = this.getQueueUrl(destination);
+        
+        RequestMessage request = new RequestMessage();
+        request.setSentBy(this.appInfo);
+        request.setConversation(conversationId);
+        request.setService(service);
+        request.setType(MessageTypeEnum.request);
+        request.setBody(message);
+        request.setPayload(payload);
+        
+        return this.sendToQueue(destQueue, request);
+	}
+	
 	
     public int readMessages() throws PoloMessagingException {
     		return this.readMessages(null);
     }
-    
     public int readMessages(Map<String, Object> params) throws PoloMessagingException {
     		Map<String, Object> finalParams = null;
     		Map<String, Object> defaultParams = (Map) ConfigurationUtils.get(this.config, "aws", "sqs", "consume");
@@ -324,29 +346,6 @@ public class PoloMessaging {
 			//throw new PoloMessagingException("Error processing message: " + e.getMessage(), e);
 		}
     }
-	
-	public String sendRequest(String destination, String service, Object message, Object payload, String conversationId) throws PoloMessagingException {
-        // Verifica se o aplicativo é capaz de receber respostas do serviço.
-        if(this.responseHandlers.get(service) == null) {
-            throw new PoloMessagingException("Can't send message to service " + service + " without a response handler registered.");
-        }
-
-        if(conversationId == null)
-            conversationId = UUID.randomUUID().toString();
-
-        // Get the queue URL
-        String destQueue = this.getQueueUrl(destination);
-        
-        RequestMessage request = new RequestMessage();
-        request.setSentBy(this.appInfo);
-        request.setConversation(conversationId);
-        request.setService(service);
-        request.setType(MessageTypeEnum.request);
-        request.setBody(message);
-        request.setPayload(payload);
-        
-        return this.sendToQueue(destQueue, request);
-	}
 	
 	private String getQueueUrl(String destination) throws PoloMessagingException {
         String destQueue = this.urlCache.get(destination);

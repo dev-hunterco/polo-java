@@ -16,6 +16,11 @@ public class RequestMessage extends PoloMessage {
 		return forwardedBy;
 	}
 	
+	@Override
+	public void setConversation(String conversationId) {
+		super.setConversation(conversationId);
+	}
+	
 	void setActionHandler(RequestActionInterface handler) {
 		this.actionHandler = handler;
 	}
