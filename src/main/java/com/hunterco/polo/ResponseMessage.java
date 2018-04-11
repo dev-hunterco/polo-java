@@ -10,15 +10,16 @@ public class ResponseMessage extends PoloMessage {
 	private transient ResponseActionInterface actionHandler;
 	
 	protected ResponseMessage() {
+		super();
+		this.setType(MessageTypeEnum.response);
 	}
 	
 	public ResponseMessage(RequestMessage originalMessage) {
-		super();
+		this();
 		this.originalMessage = originalMessage;
 		this.setConversation(originalMessage.getConversation());
 		this.setPayload(originalMessage.getPayload());
 		this.setService(originalMessage.getService());
-		this.setType(MessageTypeEnum.response);
 	}
 
 	public boolean isSuccess() {
