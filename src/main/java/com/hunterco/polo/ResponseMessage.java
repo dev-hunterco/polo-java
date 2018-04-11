@@ -35,7 +35,7 @@ public class ResponseMessage extends PoloMessage {
 	}
 
 	
-	public void setActionHandler(ResponseActionInterface actionHandler) {
+	protected void setActionHandler(ResponseActionInterface actionHandler) {
 		this.actionHandler = actionHandler;
 	}
 	

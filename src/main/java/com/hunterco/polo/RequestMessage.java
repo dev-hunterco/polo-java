@@ -21,7 +21,7 @@ public class RequestMessage extends PoloMessage {
 		super.setConversation(conversationId);
 	}
 	
-	void setActionHandler(RequestActionInterface handler) {
+	protected void setActionHandler(RequestActionInterface handler) {
 		this.actionHandler = handler;
 	}
 	
