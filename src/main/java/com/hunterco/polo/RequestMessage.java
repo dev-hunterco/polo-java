@@ -1,10 +1,12 @@
 package com.hunterco.polo;
 
+import java.beans.Transient;
+
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 public class RequestMessage extends PoloMessage {
 	@JsonIgnore
-	private RequestActionInterface actionHandler;
+	private transient RequestActionInterface actionHandler;
 	
 	private ApplicationInfo forwardedBy;
 	

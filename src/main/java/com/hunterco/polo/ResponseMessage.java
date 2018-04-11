@@ -7,10 +7,9 @@ public class ResponseMessage extends PoloMessage {
 	private boolean success;
 	
 	@JsonIgnore
-	private ResponseActionInterface actionHandler;
+	private transient ResponseActionInterface actionHandler;
 	
 	protected ResponseMessage() {
-		
 	}
 	
 	public ResponseMessage(RequestMessage originalMessage) {
