@@ -1,7 +1,5 @@
 package com.hunterco.polo;
 
-import java.beans.Transient;
-
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 public class RequestMessage extends PoloMessage {
@@ -9,6 +7,11 @@ public class RequestMessage extends PoloMessage {
 	private transient RequestActionInterface actionHandler;
 	
 	private ApplicationInfo forwardedBy;
+	
+	public RequestMessage() {
+		super();
+		this.setType(MessageTypeEnum.request);
+	}
 	
 	protected void setForwardedBy(ApplicationInfo forwardedBy) {
 		this.forwardedBy = forwardedBy;
