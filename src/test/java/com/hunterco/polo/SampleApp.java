@@ -19,6 +19,7 @@ public class SampleApp {
 	protected PoloMessaging messagingAPI;
 	
 	private ArrayList<RequestMessage> requests = new ArrayList<>();
+	private ArrayList<RequestMessage> pendingResponses = new ArrayList<>();
 	private ArrayList<ResponseMessage> responses = new ArrayList<>();
 	private ArrayList<ResponseMessage> wrongResponses = new ArrayList<>();
 
@@ -44,14 +45,24 @@ public class SampleApp {
 	    
         logger.info("Queue initialized for " + this.getName());
         this.messagingAPI.onRequest ("greetings", new RequestHandlerInterface() {
-			@Override
 			public void processRequest(RequestMessage message) throws PoloMessagingException {
 				SampleApp.this.onRequestArrived(message);
 			}
 		});
         
         this.messagingAPI.onResponse("greetings", new ResponseHandlerInterface() {
-        		@Override
+	        	public void processResponse(ResponseMessage message) throws PoloMessagingException {
+        			SampleApp.this.onResponseArrived(message);
+	        	}        	
+        });
+
+        this.messagingAPI.onRequest ("asyncGreetings", new RequestHandlerInterface() {
+			public void processRequest(RequestMessage message) throws PoloMessagingException {
+				SampleApp.this.onAsyncRequestArrived(message);
+			}
+		});
+        
+        this.messagingAPI.onResponse("asyncGreetings", new ResponseHandlerInterface() {
 	        	public void processResponse(ResponseMessage message) throws PoloMessagingException {
         			SampleApp.this.onResponseArrived(message);
 	        	}        	
@@ -83,6 +94,28 @@ public class SampleApp {
 	    else
 	        message.dismiss();
 	}
+	
+	public void onAsyncRequestArrived(RequestMessage message) throws PoloMessagingException {
+        logger.info(this.name + " - Message received by", this.name, "from", message.getSentBy().getApplication(), "- Async Response");
+
+        this.requests.add(message);
+        this.pendingResponses.add(message);
+
+        // Won't send an answer but will remove the message from queue
+        // Notice that the app should send an async response sometime later.
+        message.done();
+    }
+
+	public String sendAsyncResponse(RequestMessage message) throws PoloMessagingException {
+        Map<String, Object> data = new HashMap<>();
+        data.put("message", "It took some time, but here it is...");
+        return this.messagingAPI.sendAsyncResponse(message, data);
+    }
+
+	public String sendAsyncGreetings(String destination, Object payload) throws PoloMessagingException {
+        String message = "Hello, " + destination + "... See you later...";
+        return this.messagingAPI.sendRequest(destination, "asyncGreetings", message);
+    }
 	
 	public void onResponseArrived(ResponseMessage message) throws PoloMessagingException {
 	    logger.info(this.name + " - Response received by " + this.getName() + " from " + message.getSentBy().getApplication());

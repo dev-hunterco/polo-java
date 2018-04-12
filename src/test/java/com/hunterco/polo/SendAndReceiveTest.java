@@ -129,4 +129,64 @@ public class SendAndReceiveTest {
         Assert.assertEquals(false, app1.getWrongResponsesReceived().get(0).isSuccess());
         Assert.assertEquals("{error=Service 'wrong_greetings' not supported.}", app1.getWrongResponsesReceived().get(0).getBody().toString());
     }
+	
+	@Test
+	public void testAsyncResponse() throws PoloMessagingException {
+        logger.info("_______________________ App1 to App2 ________________________");
+//        app1.sendAsyncGreetings("App2")
+//            .then(reciboEnvio => {
+//                app1.getRequestsReceived().length.should.be.eql(0);
+//                app1.getResponsesReceived().length.should.be.eql(0);
+//                app2.getRequestsReceived().length.should.be.eql(0);
+//                app2.getResponsesReceived().length.should.be.eql(0);
+//                return reciboEnvio;
+//            })
+//            .then(reciboEvento => {
+//                logger.debug("_______________________ App2 receives and responds _____________________")
+//                return app2.receiveMessages()
+//            })
+//            .then(numOfMessages => {
+//                numOfMessages.should.be.eql(1);
+//                app1.getRequestsReceived().length.should.be.eql(0);
+//                app1.getResponsesReceived().length.should.be.eql(0);
+//                app2.getRequestsReceived().length.should.be.eql(1);
+//                app2.getResponsesReceived().length.should.be.eql(0);
+//                app2.getRequestsReceived()[0].body.should.be.eql("Hello, App2... See you later...");
+//                app2.getPendingResponses().length.should.be.eql(1);
+//                return numOfMessages;
+//            })
+//            .then(_ => {
+//                logger.debug("_______________________ App1 * WON'T *gets a response _____________________")
+//                return app1.receiveMessages();
+//            })
+//            .then(numOfMessages => {
+//                app1.getRequestsReceived().length.should.be.eql(0);
+//                app1.getResponsesReceived().length.should.be.eql(0);
+//                app2.getRequestsReceived().length.should.be.eql(1);
+//                app2.getResponsesReceived().length.should.be.eql(0);
+//                return numOfMessages;
+//            })
+//            .then(_ => {
+//                logger.debug("_______________________ Now app2 sends an async answer _____________________")
+//                var msg = app2.getPendingResponses()[0];
+//                app2.sendAsyncResponse(msg);
+//                return app1.receiveMessages();
+//            })
+//            .then(numOfMessages => {
+//                app1.getRequestsReceived().length.should.be.eql(0);
+//                app1.getResponsesReceived().length.should.be.eql(1);
+//                app2.getRequestsReceived().length.should.be.eql(1);
+//                app2.getResponsesReceived().length.should.be.eql(0);
+//                return numOfMessages;
+//            })
+//            .then(numOfMessages => {
+//                numOfMessages.should.be.eql(1);
+//                done()
+//            })
+//            .catch(error => {
+//                done(error);
+//            });
+    }
+
+	
 }

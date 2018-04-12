@@ -295,6 +295,41 @@ public class PoloMessaging {
     		}
     }
     
+	public String sendAsyncResponse(RequestMessage message, Object data) throws PoloMessagingException {
+		ResponseMessage response = new ResponseMessage(message);
+		response.setBody(data);
+		response.setSuccess(true);
+		response.setSentBy(PoloMessaging.this.appInfo);
+		
+        return PoloMessaging.this.sendToQueue(message.getSentBy().getCallback(), response);
+	}
+
+	public String sendAsyncForward(RequestMessage msg, String destination) throws PoloMessagingException {
+        RequestMessage request = new RequestMessage();
+        request.setSentBy(msg.getSentBy());
+        request.setConversation(msg.getConversation());
+        request.setService(msg.getService());
+        request.setType(MessageTypeEnum.request);
+        request.setBody(msg.getBody());
+        request.setPayload(msg.getPayload());
+        request.setForwardedBy(PoloMessaging.this.appInfo);
+        
+        String destQueue = PoloMessaging.this.getQueueUrl(destination);
+        return PoloMessaging.this.sendToQueue(destQueue, request);
+    }
+	
+	public String sendAsyncReplyError(RequestMessage msg, Object error) throws PoloMessagingException {
+		Map<String, Object> errorInfo = new HashMap<>();
+		errorInfo.put("error", error);
+		ResponseMessage response = new ResponseMessage(msg);
+		response.setBody(errorInfo);
+		response.setSuccess(false);
+		response.setSentBy(PoloMessaging.this.appInfo);
+		
+        return PoloMessaging.this.sendToQueue(msg.getSentBy().getCallback(), response);
+    }
+    
+    
     protected void processMessage(Message sqsMessage) {
 		try {
 			PoloMessage poloMessage = mapper.readValue(sqsMessage.body(), PoloMessage.class);
@@ -386,27 +421,17 @@ public class PoloMessaging {
 		}
 		
 		@Override
-		public void reply(RequestMessage msg, Object data) throws PoloMessagingException {
-			ResponseMessage response = new ResponseMessage(msg);
-			response.setBody(data);
-			response.setSuccess(true);
-			response.setSentBy(PoloMessaging.this.appInfo);
-			
-	        PoloMessaging.this.sendToQueue(msg.getSentBy().getCallback(), response);
+		public String reply(RequestMessage msg, Object data) throws PoloMessagingException {
+			String messageReceipt = PoloMessaging.this.sendAsyncResponse(msg, data);
 	        PoloMessaging.this.removeFromQueue(PoloMessaging.this.appInfo.getCallback(), this.messageReceipt);
+	        return messageReceipt;
 		}
 
 		@Override
-		public void replyError(RequestMessage msg, Object error) throws PoloMessagingException {
-			Map<String, Object> errorInfo = new HashMap<>();
-			errorInfo.put("error", error);
-			ResponseMessage response = new ResponseMessage(msg);
-			response.setBody(errorInfo);
-			response.setSuccess(false);
-			response.setSentBy(PoloMessaging.this.appInfo);
-			
-	        PoloMessaging.this.sendToQueue(msg.getSentBy().getCallback(), response);
+		public String replyError(RequestMessage msg, Object error) throws PoloMessagingException {
+			String messageReceipt = PoloMessaging.this.sendAsyncReplyError(msg, error);
 	        PoloMessaging.this.removeFromQueue(PoloMessaging.this.appInfo.getCallback(), this.messageReceipt);
+	        return messageReceipt;
 		}
 
 		@Override
@@ -415,19 +440,14 @@ public class PoloMessaging {
 
 		@Override
 		public String forward(RequestMessage msg, String destination) throws PoloMessagingException {
-	        RequestMessage request = new RequestMessage();
-	        request.setSentBy(msg.getSentBy());
-	        request.setConversation(msg.getConversation());
-	        request.setService(msg.getService());
-	        request.setType(MessageTypeEnum.request);
-	        request.setBody(msg.getBody());
-	        request.setPayload(msg.getPayload());
-	        request.setForwardedBy(PoloMessaging.this.appInfo);
-	        
-	        String destQueue = PoloMessaging.this.getQueueUrl(destination);
-	        String newMessageReceipt = PoloMessaging.this.sendToQueue(destQueue, request);
+	        String newMessageReceipt = PoloMessaging.this.sendAsyncForward(msg, destination); 
 	        PoloMessaging.this.removeFromQueue(PoloMessaging.this.appInfo.getCallback(), this.messageReceipt);
 	        return newMessageReceipt; 
+		}
+		
+		@Override
+		public void done(RequestMessage msg) throws PoloMessagingException {
+	        PoloMessaging.this.removeFromQueue(PoloMessaging.this.appInfo.getCallback(), this.messageReceipt);
 		}
 	}
 

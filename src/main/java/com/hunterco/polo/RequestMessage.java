@@ -41,7 +41,11 @@ public class RequestMessage extends PoloMessage {
 	public void forward(String destination) throws PoloMessagingException {
 		this.actionHandler.forward(this, destination);
 	}
-	
+
+	public void done() throws PoloMessagingException {
+		this.actionHandler.done(this);
+	}
+
 	public void dismiss() {
 		this.actionHandler.dismiss(this);
 	}
