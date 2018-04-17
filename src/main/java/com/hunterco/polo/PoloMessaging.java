@@ -139,6 +139,41 @@ public class PoloMessaging {
 		return this.config;
 	}
 	
+	private String findQueue(String queueName, boolean autocreate) throws PoloMessagingException {
+        ListQueuesRequest lqr = ListQueuesRequest.builder()
+				.queueNamePrefix(queueName)
+				.build();
+        List<String> queueUrls;
+        try {
+        		queueUrls = this.sqsClient.listQueues(lqr).get().queueUrls();
+        		if(queueUrls == null)
+        			queueUrls = new ArrayList<>();
+        } catch (InterruptedException | ExecutionException e) {
+        		logger.warn("Error loading queues: " + e.getMessage());
+        		queueUrls = new ArrayList<>();
+        }
+
+		if(queueUrls.size() > 0) {
+			return queueUrls.get(0);
+		}
+		else if(autocreate) {
+			logger.info("Creating queue...");
+			try {
+				String queueUrl = this.sqsClient.createQueue(CreateQueueRequest.builder().queueName(queueName)
+							  	.build())
+								.get().queueUrl();
+				logger.info("Queue created: " + queueUrl);
+				return queueUrl;
+			} catch (InterruptedException | ExecutionException e) {
+				throw new PoloMessagingException("Error creating queue", e);
+			}
+		}
+		else {
+			logger.error("Queue not found...");
+			throw new PoloMessagingException("Queue " + queueName + " not found.");
+		}
+	}
+	
 	public void initializeSQS() throws PoloMessagingException {
 		Region region = null;
 		if(ConfigurationUtils.get(this.config, "aws", "api", "region") != null)
@@ -159,40 +194,13 @@ public class PoloMessaging {
 
         // Define queue name
         this.queueName = ConfigurationUtils.get(this.config, "app") + "_" + ConfigurationUtils.get(this.config, "stage");
-        ListQueuesRequest lqr = ListQueuesRequest.builder()
-        							.queueNamePrefix(this.queueName)
-        							.build();
-        List<String> queueUrls;
-        try {
-			queueUrls = this.sqsClient.listQueues(lqr).get().queueUrls();
-			if(queueUrls == null)
-				queueUrls = new ArrayList<>();
-		} catch (InterruptedException | ExecutionException e) {
-			logger.warn("Error loading queues: " + e.getMessage());
-			queueUrls = new ArrayList<>();
-		}
-        
-        
-        if(queueUrls.size()> 0) {
-            this.appInfo.setCallback(queueUrls.get(0));
-            logger.info("Found queue for " + ConfigurationUtils.get(this.config, "app") + ": " + this.appInfo.getCallback());
+
+        String queueUrl = this.findQueue(this.queueName, (boolean) ConfigurationUtils.get(this.config, "aws", "sqs", "create"));
+        if(queueUrl == null) {
+			throw new PoloMessagingException("Error creating queue.");
         }
-        else if((boolean) ConfigurationUtils.get(this.config, "aws", "sqs", "create")) {
-            logger.info("Creating queue...");
-            try {
-				String queueUrl = this.sqsClient.createQueue(CreateQueueRequest.builder().queueName(this.queueName)
-								  	.build())
-									.get().queueUrl();
-	            this.appInfo.setCallback(queueUrl);
-				logger.info("Queue created: " + queueUrl);
-			} catch (InterruptedException | ExecutionException e) {
-				throw new PoloMessagingException("Error creating queue", e);
-			}
-        }
-        else {
-            logger.error("Queue not found...");
-            throw new PoloMessagingException("Queue " + this.queueName + " not found.");
-        }
+		this.appInfo.setCallback(queueUrl);
+		logger.info("Found queue for " + ConfigurationUtils.get(this.config, "app") + ": " + this.appInfo.getCallback());
 	}
 
 	public void onRequest(String service, RequestHandlerInterface requestConsumer) {
@@ -220,7 +228,6 @@ public class PoloMessaging {
 
         // Get the queue URL
         String destQueue = this.getQueueUrl(destination);
-        
         RequestMessage request = new RequestMessage();
         request.setSentBy(this.appInfo);
         request.setConversation(conversationId);
@@ -231,8 +238,7 @@ public class PoloMessaging {
         
         return this.sendToQueue(destQueue, request);
 	}
-	
-	
+		
     public int readMessages() throws PoloMessagingException {
     		return this.readMessages(null);
     }
@@ -329,7 +335,6 @@ public class PoloMessaging {
         return PoloMessaging.this.sendToQueue(msg.getSentBy().getCallback(), response);
     }
     
-    
     protected void processMessage(Message sqsMessage) {
 		try {
 			PoloMessage poloMessage = mapper.readValue(sqsMessage.body(), PoloMessage.class);
@@ -383,6 +388,7 @@ public class PoloMessaging {
     }
 	
 	private String getQueueUrl(String destination) throws PoloMessagingException {
+		boolean autoCreate = (boolean) ConfigurationUtils.get(this.config, "aws", "sqs", "create");
         String destQueue = this.urlCache.get(destination);
         if(destQueue == null) {
         		String targetQueue = destination + "_" + this.config.get("stage");
@@ -391,7 +397,20 @@ public class PoloMessaging {
             try {
 				destQueue = this.sqsClient.getQueueUrl(req).get().queueUrl();
 			} catch (InterruptedException | ExecutionException e) {
-				throw new PoloMessagingException("Error loading queue for app: " + destination, e);
+				if(autoCreate) {
+					logger.info("Creating queue...");
+					try {
+						String queueUrl = this.sqsClient.createQueue(CreateQueueRequest.builder().queueName(targetQueue)
+									  	.build())
+										.get().queueUrl();
+						logger.info("Queue created: " + targetQueue);
+						return queueUrl;
+					} catch (InterruptedException | ExecutionException e2) {
+						throw new PoloMessagingException("Error creating queue", e2);
+					}
+				}
+				else
+					throw new PoloMessagingException("Error loading queue for app: " + destination, e);
 			}
             this.urlCache.put(destination, destQueue);
         }
@@ -412,8 +431,7 @@ public class PoloMessaging {
 			throw new PoloMessagingException("Error sending message to queue: " + e.getMessage(), e);
 		}
 	}
-	
-	
+		
 	class RequestActionHandler implements RequestActionInterface {
 		private String messageReceipt;
 		public RequestActionHandler(String receipt) {

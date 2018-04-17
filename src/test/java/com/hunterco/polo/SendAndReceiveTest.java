@@ -1,6 +1,7 @@
 package com.hunterco.polo;
 
 import java.io.File;
+import java.util.Arrays;
 import java.util.Map;
 
 import org.junit.Assert;
@@ -84,6 +85,8 @@ public class SendAndReceiveTest {
 	
 	@Test
 	public void testSendToInexistent() throws PoloMessagingException {
+		// Turn autoCreate off to force raising error
+		ConfigurationUtils.set(app1.messagingAPI.getConfig(), Arrays.asList("aws", "sqs", "create"), false);
         logger.info("_______________________ App1 to BLARGH ________________________");
         try {
         		app1.sendGreetings("BLARGH");
@@ -92,6 +95,9 @@ public class SendAndReceiveTest {
         catch(PoloMessagingException e) {
         		// Ok, I expect an exception.. :)
         		Assert.assertEquals("Error loading queue for app: BLARGH", e.getMessage());
+        }
+        finally {
+        		ConfigurationUtils.set(app1.messagingAPI.getConfig(), Arrays.asList("aws", "sqs", "create"), true);
         }
     }
 	
