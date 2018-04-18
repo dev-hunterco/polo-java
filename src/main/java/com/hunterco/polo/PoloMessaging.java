@@ -365,7 +365,7 @@ public class PoloMessaging {
 				// Gets Business Handler (consumer)
 				ResponseHandlerInterface handler = this.responseHandlers.get(responseMessage.getService());
 				if(handler == null) {
-	                // The service, orinally, was able to send such a message but can't recognize the response
+	                // The service, originally, was able to send such a message but can't recognize the response
 					// Just log the error and remove it from the queue
 	                logger.error("An invalid request was sent to " + responseMessage.getSentBy().getApplication() + " by this application (" + this.appInfo.getApplication() + ")");
 	                logger.error("or there's no response handler for service " + responseMessage.getService() + " (although it was able to send this message at some time).");
