@@ -12,7 +12,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
-import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -243,24 +243,11 @@ public class PoloMessaging {
     		return this.readMessages(null);
     }
     public int readMessages(Map<String, Object> params) throws PoloMessagingException {
-    		Map<String, Object> finalParams = null;
-    		Map<String, Object> defaultParams = (Map) ConfigurationUtils.get(this.config, "aws", "sqs", "consume");
-    		
-    		if(params == null && defaultParams != null) // assume default
-    			finalParams = defaultParams;
-    		else if(params != null && defaultParams == null) // assume argument
-    			finalParams = params;
-    		else if(params != null && defaultParams != null) { // override defauls
-    			final Map<String, Object> fp = new HashMap<>(defaultParams);
-    			params.entrySet().forEach(entry -> fp.put(entry.getKey(), entry.getValue()));
-    			finalParams = fp;
-    		}
-    		
         int numOfMessages = 0;
         int messagesRead = 0;
         
         do {
-        		List<Message> messages = this.getMessages(this.appInfo.getCallback(), finalParams);
+        		List<PoloMessage> messages = this.getMessages(this.appInfo.getCallback(), params);
         		if(messages != null) {
 	        		messagesRead = messages.size();
 	        		
@@ -274,15 +261,32 @@ public class PoloMessaging {
         return numOfMessages;
     }
     
-    protected List<Message> getMessages(String queue, Map<String, Object> params) throws PoloMessagingException {
-	    	if(params == null)
-	    		params = new HashMap<>();
+    public List<PoloMessage> getMessages() throws PoloMessagingException {
+    		return this.getMessages(null);
+    }
+    public List<PoloMessage> getMessages(Map<String, Object> params) throws PoloMessagingException {
+		return this.getMessages(this.appInfo.getCallback(), null);
+    }
+
+    private List<PoloMessage> getMessages(String queue, Map<String, Object> params) throws PoloMessagingException {
+		Map<String, Object> finalParams = null;
+		Map<String, Object> defaultParams = (Map) ConfigurationUtils.get(this.config, "aws", "sqs", "consume");
+		
+		if(params == null && defaultParams != null) // assume default
+			finalParams = defaultParams;
+		else if(params != null && defaultParams == null) // assume argument
+			finalParams = params;
+		else if(params != null && defaultParams != null) { // override defauls
+			final Map<String, Object> fp = new HashMap<>(defaultParams);
+			params.entrySet().forEach(entry -> fp.put(entry.getKey(), entry.getValue()));
+			finalParams = fp;
+		}
 	    	
     		try {
 	    		Builder builder = ReceiveMessageRequest.builder().queueUrl(queue);
 	    		
 	    		// dynamically set extra parameters
-	    		params.entrySet().forEach(entry -> {
+	    		finalParams.entrySet().forEach(entry -> {
 	    			String methodName = "set" + entry.getKey();
 					try {
 						Method m = builder.getClass().getMethod(methodName, entry.getValue().getClass());
@@ -294,7 +298,18 @@ public class PoloMessaging {
 	    		});
 	    		
 	    		ReceiveMessageRequest req = builder.build();
-	    		return this.sqsClient.receiveMessage(req).get().messages();
+	    		List<Message> messages = this.sqsClient.receiveMessage(req).get().messages();
+	    		if(messages == null) {
+	    			messages = new ArrayList<>();
+	    		}
+	    		
+	    		return messages.stream()
+	    				.map(msg -> {
+	    					PoloMessage poloMsg = this.buildPoloMessage(msg.body());
+	    					poloMsg.setSqsReceipt(msg.receiptHandle());
+	    					return poloMsg;
+	    				})
+	    				.collect(Collectors.toList());
     		}
     		catch(InterruptedException | ExecutionException e) {
     			throw new PoloMessagingException("Error sending message: " + e.getMessage(), e);
@@ -335,15 +350,30 @@ public class PoloMessaging {
         return PoloMessaging.this.sendToQueue(msg.getSentBy().getCallback(), response);
     }
     
-    protected void processMessage(Message sqsMessage) {
+	private PoloMessage buildPoloMessage(String messageBody) {
+		PoloMessage poloMessage;
 		try {
-			PoloMessage poloMessage = mapper.readValue(sqsMessage.body(), PoloMessage.class);
-			
+			poloMessage = mapper.readValue(messageBody, PoloMessage.class);
 	        if(poloMessage.getType().equals(MessageTypeEnum.request)) {
-	        		RequestMessage requestMessage = mapper.readValue(sqsMessage.body(), RequestMessage.class);
+	        		return mapper.readValue(messageBody, RequestMessage.class);
+	        }
+	        else {
+	    			return mapper.readValue(messageBody, ResponseMessage.class);
+	        }
+		} catch (IOException e) {
+			System.err.println("Error parsing PoloMessaging from Message Json");
+			e.printStackTrace();
+			return null;
+		}
+	}
+	
+    public void processMessage(PoloMessage poloMessage) {
+		try {
+	        if(poloMessage.getType().equals(MessageTypeEnum.request)) {
+	        		RequestMessage requestMessage = (RequestMessage) poloMessage;
 	        		
 	        		// Attach Action Handlers
-				RequestActionInterface actions = new RequestActionHandler(sqsMessage.receiptHandle());
+				RequestActionInterface actions = new RequestActionHandler(poloMessage.getSqsReceipt());
 				requestMessage.setActionHandler(actions);
 				
 				// Gets Business Handler (consumer)
@@ -356,10 +386,10 @@ public class PoloMessaging {
 				}
 	        }
 	        else if(poloMessage.getType().equals(MessageTypeEnum.response)) {
-	        		ResponseMessage responseMessage = mapper.readValue(sqsMessage.body(), ResponseMessage.class);
+	        		ResponseMessage responseMessage = (ResponseMessage) poloMessage;
 	        		
 	        		// Attach Action Handlers
-				ResponseActionInterface actions = new ResponseActionHandler(sqsMessage.receiptHandle());
+				ResponseActionInterface actions = new ResponseActionHandler(poloMessage.getSqsReceipt());
 				responseMessage.setActionHandler(actions);
 				
 				// Gets Business Handler (consumer)
@@ -379,9 +409,9 @@ public class PoloMessaging {
 	            // Mensagem recebida tem um tipo incompatível.
 	            logger.error("Invalid message received. Type should be request|response");
 	            logger.info("Message will be removed.");
-	            this.removeFromQueue(this.appInfo.getCallback(), sqsMessage.receiptHandle());
+	            this.removeFromQueue(this.appInfo.getCallback(), poloMessage.getSqsReceipt());
 	        }
-		} catch (IOException | PoloMessagingException e) {
+		} catch (PoloMessagingException e) {
 			e.printStackTrace();
 			//throw new PoloMessagingException("Error processing message: " + e.getMessage(), e);
 		}
@@ -441,14 +471,16 @@ public class PoloMessaging {
 		@Override
 		public String reply(RequestMessage msg, Object data) throws PoloMessagingException {
 			String messageReceipt = PoloMessaging.this.sendAsyncResponse(msg, data);
-	        PoloMessaging.this.removeFromQueue(PoloMessaging.this.appInfo.getCallback(), this.messageReceipt);
+			if(msg.getSqsReceipt() != null)
+				PoloMessaging.this.removeFromQueue(PoloMessaging.this.appInfo.getCallback(), msg.getSqsReceipt());
 	        return messageReceipt;
 		}
 
 		@Override
 		public String replyError(RequestMessage msg, Object error) throws PoloMessagingException {
 			String messageReceipt = PoloMessaging.this.sendAsyncReplyError(msg, error);
-	        PoloMessaging.this.removeFromQueue(PoloMessaging.this.appInfo.getCallback(), this.messageReceipt);
+			if(msg.getSqsReceipt() != null)
+				PoloMessaging.this.removeFromQueue(PoloMessaging.this.appInfo.getCallback(), msg.getSqsReceipt());
 	        return messageReceipt;
 		}
 
@@ -459,13 +491,15 @@ public class PoloMessaging {
 		@Override
 		public String forward(RequestMessage msg, String destination) throws PoloMessagingException {
 	        String newMessageReceipt = PoloMessaging.this.sendAsyncForward(msg, destination); 
-	        PoloMessaging.this.removeFromQueue(PoloMessaging.this.appInfo.getCallback(), this.messageReceipt);
+			if(msg.getSqsReceipt() != null)
+				PoloMessaging.this.removeFromQueue(PoloMessaging.this.appInfo.getCallback(), msg.getSqsReceipt());
 	        return newMessageReceipt; 
 		}
 		
 		@Override
 		public void done(RequestMessage msg) throws PoloMessagingException {
-	        PoloMessaging.this.removeFromQueue(PoloMessaging.this.appInfo.getCallback(), this.messageReceipt);
+			if(msg.getSqsReceipt() != null)
+				PoloMessaging.this.removeFromQueue(PoloMessaging.this.appInfo.getCallback(), msg.getSqsReceipt());
 		}
 	}
 
@@ -477,12 +511,18 @@ public class PoloMessaging {
 		
 		@Override
 		public void done(ResponseMessage msg) throws PoloMessagingException {
-	        PoloMessaging.this.removeFromQueue(PoloMessaging.this.appInfo.getCallback(), this.messageReceipt);
+			if(msg.getSqsReceipt() != null) {
+				PoloMessaging.this.removeFromQueue(PoloMessaging.this.appInfo.getCallback(), msg.getSqsReceipt());
+			}
 		}
 
 		@Override
 		public void dismiss(ResponseMessage msg) {
 		}
+	}
+	
+	public void removeFromQueue(PoloMessage message) throws PoloMessagingException {
+		this.removeFromQueue(this.appInfo.getCallback(), message.getSqsReceipt());
 	}
 
 	public void removeFromQueue(String callback, String messageReceipt) throws PoloMessagingException {

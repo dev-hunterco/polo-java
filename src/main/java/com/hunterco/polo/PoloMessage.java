@@ -19,6 +19,7 @@ public class PoloMessage {
 	private Object body;
 	private Object payload;
 	private Date timestamp;
+	private String sqsReceipt;
 	
 	public PoloMessage() {
         this.id = UUID.randomUUID().toString();
@@ -75,5 +76,12 @@ public class PoloMessage {
 	
 	protected void setPayload(Object payload) {
 		this.payload = payload;
+	}
+	
+	protected String getSqsReceipt() {
+		return sqsReceipt;
+	}
+	protected void setSqsReceipt(String sqsReceipt) {
+		this.sqsReceipt = sqsReceipt;
 	}
 }
